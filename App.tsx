@@ -54,10 +54,9 @@ const App: React.FC = () => {
     }).filter(item => item.quantity > 0));
   };
 
-  // 刪除單筆歷史紀錄
   const deleteTransaction = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // 避免點擊刪除時同時觸發展開內容
-    if (window.confirm('確定要永久刪除這筆交易紀錄嗎？這會從營業總額中扣除。')) {
+    e.stopPropagation(); 
+    if (window.confirm('確定要永久刪除這筆交易紀錄嗎？營業總額會同步扣除。')) {
       setTransactions(prev => prev.filter(t => t.id !== id));
       if (expandedTx === id) setExpandedTx(null);
     }
@@ -207,20 +206,13 @@ const App: React.FC = () => {
                 </button>
               </div>
 
-              {aiInsight && (
-                <div className="bg-indigo-600 text-white p-6 rounded-3xl shadow-xl">
-                  <p className="font-black text-indigo-200 mb-2 uppercase tracking-widest text-[10px]">AI 顧問建議</p>
-                  <p className="text-white leading-relaxed whitespace-pre-wrap font-medium">{aiInsight}</p>
-                </div>
-              )}
-
               <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden divide-y divide-slate-50">
                 {stats.filteredList.length === 0 ? (
                   <div className="p-20 text-center text-slate-300 font-black uppercase tracking-widest">目前尚無數據</div>
                 ) : (
                   stats.filteredList.map(t => (
                     <div key={t.id} onClick={() => setExpandedTx(expandedTx === t.id ? null : t.id)} className="p-5 hover:bg-slate-50 transition-colors cursor-pointer group relative">
-                      <div className="flex justify-between items-center pr-16">
+                      <div className="flex justify-between items-center pr-20">
                         <div className="flex items-center gap-4">
                           <div className={`p-3 rounded-xl ${t.paymentMethod === 'leke' ? 'bg-orange-100 text-orange-600' : t.paymentMethod === 'mobile' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
                             {t.paymentMethod === 'cash' ? <Banknote size={20}/> : t.paymentMethod === 'leke' ? <Users size={20}/> : <Smartphone size={20}/>}
@@ -233,19 +225,19 @@ const App: React.FC = () => {
                         <div className="text-slate-300 group-hover:text-slate-400">{expandedTx === t.id ? <ChevronUp size={20}/> : <ChevronDown size={20}/>}</div>
                       </div>
 
-                      {/* 【重要修正】手機端刪除按鈕：移除 opacity-0，讓它始終顯示 */}
+                      {/* 超級明顯的刪除按鈕：紅色實心邊框 + 高對比度圖示 */}
                       <button 
                         onClick={(e) => deleteTransaction(t.id, e)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 p-3 text-red-200 hover:text-red-500 active:text-red-600 transition-colors flex items-center justify-center bg-slate-50 rounded-2xl border border-slate-100"
-                        title="刪除此筆交易"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center bg-red-50 text-red-600 rounded-2xl border-2 border-red-200 hover:bg-red-600 hover:text-white active:scale-90 transition-all z-30 shadow-sm"
+                        title="刪除紀錄"
                       >
-                        <Trash2 size={20} />
+                        <Trash2 size={24} strokeWidth={2.5} />
                       </button>
 
                       {expandedTx === t.id && (
                         <div className="mt-4 pt-4 border-t border-slate-100 space-y-2 animate-in slide-in-from-top-2">
                           {t.items.map((item, idx) => (
-                            <div key={idx} className="flex justify-between text-sm">
+                            <div key={idx} className="flex justify-between text-sm pr-12">
                               <span className="text-slate-600">{item.name} x{item.quantity}</span>
                               <span className="font-black text-slate-800 mono">NT$ {item.price * item.quantity}</span>
                             </div>
@@ -259,7 +251,6 @@ const App: React.FC = () => {
             </div>
           ) : (
             <div className="flex flex-col md:flex-row h-full">
-              {/* 商品列表區 */}
               <div className="flex-1 p-6 overflow-y-auto">
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                   {INITIAL_PRODUCTS.map(product => (
@@ -282,7 +273,6 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              {/* 購物車區 */}
               <div className="w-full md:w-80 lg:w-[360px] bg-white border-l border-slate-100 flex flex-col shadow-xl">
                 <div className="p-5 border-b border-slate-50 flex justify-between items-center bg-slate-50/20">
                   <h2 className="font-black text-slate-800 flex items-center gap-2 uppercase tracking-tighter text-base">
@@ -328,7 +318,6 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {/* 結帳視窗 */}
       {showCheckoutModal && (
         <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[100] flex items-center justify-center p-6">
           <div className="bg-white w-full max-w-md rounded-[3.5rem] shadow-2xl overflow-hidden animate-in zoom-in duration-300">
