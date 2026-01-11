@@ -54,10 +54,10 @@ const App: React.FC = () => {
     }).filter(item => item.quantity > 0));
   };
 
-  // 新功能：刪除單筆歷史紀錄
+  // 刪除單筆歷史紀錄
   const deleteTransaction = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // 避免觸發折疊展開
-    if (window.confirm('確定要永久刪除這筆交易紀錄嗎？這會影響營業總額。')) {
+    e.stopPropagation(); // 避免點擊刪除時同時觸發展開內容
+    if (window.confirm('確定要永久刪除這筆交易紀錄嗎？這會從營業總額中扣除。')) {
       setTransactions(prev => prev.filter(t => t.id !== id));
       if (expandedTx === id) setExpandedTx(null);
     }
@@ -220,7 +220,7 @@ const App: React.FC = () => {
                 ) : (
                   stats.filteredList.map(t => (
                     <div key={t.id} onClick={() => setExpandedTx(expandedTx === t.id ? null : t.id)} className="p-5 hover:bg-slate-50 transition-colors cursor-pointer group relative">
-                      <div className="flex justify-between items-center pr-10">
+                      <div className="flex justify-between items-center pr-16">
                         <div className="flex items-center gap-4">
                           <div className={`p-3 rounded-xl ${t.paymentMethod === 'leke' ? 'bg-orange-100 text-orange-600' : t.paymentMethod === 'mobile' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
                             {t.paymentMethod === 'cash' ? <Banknote size={20}/> : t.paymentMethod === 'leke' ? <Users size={20}/> : <Smartphone size={20}/>}
@@ -233,13 +233,13 @@ const App: React.FC = () => {
                         <div className="text-slate-300 group-hover:text-slate-400">{expandedTx === t.id ? <ChevronUp size={20}/> : <ChevronDown size={20}/>}</div>
                       </div>
 
-                      {/* 刪除歷史紀錄按鈕 */}
+                      {/* 【重要修正】手機端刪除按鈕：移除 opacity-0，讓它始終顯示 */}
                       <button 
                         onClick={(e) => deleteTransaction(t.id, e)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-200 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                        title="刪除紀錄"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 p-3 text-red-200 hover:text-red-500 active:text-red-600 transition-colors flex items-center justify-center bg-slate-50 rounded-2xl border border-slate-100"
+                        title="刪除此筆交易"
                       >
-                        <Trash2 size={18} />
+                        <Trash2 size={20} />
                       </button>
 
                       {expandedTx === t.id && (
