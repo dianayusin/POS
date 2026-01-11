@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   ShoppingCart, LayoutGrid, BarChart3, Receipt, Trash2, Plus, Minus, 
@@ -28,7 +27,12 @@ const App: React.FC = () => {
   useEffect(() => {
     const saved = localStorage.getItem('pos_transactions');
     if (saved) {
-      try { setTransactions(JSON.parse(saved)); } catch (e) { console.error(e); }
+      try { 
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) setTransactions(parsed);
+      } catch (e) { 
+        console.error("Failed to load transactions", e);
+      }
     }
   }, []);
 
@@ -54,9 +58,10 @@ const App: React.FC = () => {
     }).filter(item => item.quantity > 0));
   };
 
+  // 刪除單筆紀錄
   const deleteTransaction = (id: string, e: React.MouseEvent) => {
     e.stopPropagation(); 
-    if (window.confirm('確定要永久刪除這筆交易紀錄嗎？營業總額會同步扣除。')) {
+    if (window.confirm('確定要永久刪除這筆交易紀錄嗎？此動作不可撤回。')) {
       setTransactions(prev => prev.filter(t => t.id !== id));
       if (expandedTx === id) setExpandedTx(null);
     }
@@ -190,54 +195,67 @@ const App: React.FC = () => {
         <div className="flex-1 relative overflow-hidden">
           {activeTab === 'stats' ? (
             <div className="h-full overflow-y-auto p-6 md:p-8 space-y-8 animate-in fade-in duration-500">
-              <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4">
-                <div className="space-y-3">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="space-y-3 w-full md:w-auto">
                   <h2 className="text-2xl font-black text-slate-800">{showOnlyLeke ? '樂客轉帳歷史紀錄' : '所有交易歷史'}</h2>
-                  <div className="flex bg-slate-100 p-1 rounded-xl gap-1">
+                  <div className="flex bg-slate-100 p-1 rounded-xl gap-1 w-full md:w-auto">
                     {monthLabels.map(m => (
-                      <button key={m.offset} onClick={() => setSelectedMonthOffset(m.offset)} className={`px-4 py-2 rounded-lg font-black text-xs transition-all ${selectedMonthOffset === m.offset ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+                      <button key={m.offset} onClick={() => setSelectedMonthOffset(m.offset)} className={`flex-1 md:flex-none px-4 py-2 rounded-lg font-black text-xs transition-all ${selectedMonthOffset === m.offset ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
                         {m.name}
                       </button>
                     ))}
                   </div>
                 </div>
-                <button onClick={fetchAiInsights} className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-lg active:scale-95 transition-all">
-                  {isAiLoading ? <Loader2 className="animate-spin" size={16} /> : <Sparkles size={16} />} AI 經營分析
-                </button>
+                <div className="flex gap-2 w-full md:w-auto">
+                    <button onClick={fetchAiInsights} className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg active:scale-95 transition-all">
+                        {isAiLoading ? <Loader2 className="animate-spin" size={16} /> : <Sparkles size={16} />} AI 經營分析
+                    </button>
+                </div>
               </div>
+
+              {aiInsight && (
+                <div className="bg-indigo-600 text-white p-6 rounded-3xl shadow-xl">
+                  <p className="font-black text-indigo-200 mb-2 uppercase tracking-widest text-[10px]">AI 顧問建議</p>
+                  <p className="text-white leading-relaxed whitespace-pre-wrap font-medium">{aiInsight}</p>
+                </div>
+              )}
 
               <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden divide-y divide-slate-50">
                 {stats.filteredList.length === 0 ? (
-                  <div className="p-20 text-center text-slate-300 font-black uppercase tracking-widest">目前尚無數據</div>
+                  <div className="p-20 text-center text-slate-300 font-black uppercase tracking-widest flex flex-col items-center gap-4">
+                      <Receipt size={48} />
+                      目前尚無數據
+                  </div>
                 ) : (
                   stats.filteredList.map(t => (
-                    <div key={t.id} onClick={() => setExpandedTx(expandedTx === t.id ? null : t.id)} className="p-5 hover:bg-slate-50 transition-colors cursor-pointer group relative">
-                      <div className="flex justify-between items-center pr-20">
-                        <div className="flex items-center gap-4">
-                          <div className={`p-3 rounded-xl ${t.paymentMethod === 'leke' ? 'bg-orange-100 text-orange-600' : t.paymentMethod === 'mobile' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
+                    <div key={t.id} onClick={() => setExpandedTx(expandedTx === t.id ? null : t.id)} className="p-4 hover:bg-slate-50 transition-colors cursor-pointer group">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-4 flex-1">
+                          <div className={`p-3 rounded-xl flex-shrink-0 ${t.paymentMethod === 'leke' ? 'bg-orange-100 text-orange-600' : t.paymentMethod === 'mobile' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
                             {t.paymentMethod === 'cash' ? <Banknote size={20}/> : t.paymentMethod === 'leke' ? <Users size={20}/> : <Smartphone size={20}/>}
                           </div>
-                          <div>
+                          <div className="min-w-0">
                              <p className="font-black text-slate-800 text-lg leading-tight">NT$ {t.total.toLocaleString()}</p>
-                             <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">{new Date(t.timestamp).toLocaleString()} • {t.paymentMethod === 'leke' ? '樂客轉帳' : t.paymentMethod === 'cash' ? '現金' : '行動支付'}</p>
+                             <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5 truncate">{new Date(t.timestamp).toLocaleString()} • {t.paymentMethod === 'leke' ? '樂客' : t.paymentMethod === 'cash' ? '現金' : '行動'}</p>
                           </div>
                         </div>
-                        <div className="text-slate-300 group-hover:text-slate-400">{expandedTx === t.id ? <ChevronUp size={20}/> : <ChevronDown size={20}/>}</div>
+                        
+                        <div className="flex items-center gap-3">
+                            <button 
+                                onClick={(e) => deleteTransaction(t.id, e)}
+                                className="w-10 h-10 flex items-center justify-center bg-red-50 text-red-500 rounded-xl border border-red-100 hover:bg-red-500 hover:text-white transition-all active:scale-90"
+                                title="刪除此筆交易"
+                            >
+                                <Trash2 size={18} />
+                            </button>
+                            <div className="text-slate-300">{expandedTx === t.id ? <ChevronUp size={20}/> : <ChevronDown size={20}/>}</div>
+                        </div>
                       </div>
-
-                      {/* 超級明顯的刪除按鈕：紅色實心邊框 + 高對比度圖示 */}
-                      <button 
-                        onClick={(e) => deleteTransaction(t.id, e)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center bg-red-50 text-red-600 rounded-2xl border-2 border-red-200 hover:bg-red-600 hover:text-white active:scale-90 transition-all z-30 shadow-sm"
-                        title="刪除紀錄"
-                      >
-                        <Trash2 size={24} strokeWidth={2.5} />
-                      </button>
 
                       {expandedTx === t.id && (
                         <div className="mt-4 pt-4 border-t border-slate-100 space-y-2 animate-in slide-in-from-top-2">
                           {t.items.map((item, idx) => (
-                            <div key={idx} className="flex justify-between text-sm pr-12">
+                            <div key={idx} className="flex justify-between text-sm pr-4">
                               <span className="text-slate-600">{item.name} x{item.quantity}</span>
                               <span className="font-black text-slate-800 mono">NT$ {item.price * item.quantity}</span>
                             </div>
@@ -251,6 +269,7 @@ const App: React.FC = () => {
             </div>
           ) : (
             <div className="flex flex-col md:flex-row h-full">
+              {/* 商品列表區 */}
               <div className="flex-1 p-6 overflow-y-auto">
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                   {INITIAL_PRODUCTS.map(product => (
@@ -273,6 +292,7 @@ const App: React.FC = () => {
                 </div>
               </div>
 
+              {/* 購物車區 */}
               <div className="w-full md:w-80 lg:w-[360px] bg-white border-l border-slate-100 flex flex-col shadow-xl">
                 <div className="p-5 border-b border-slate-50 flex justify-between items-center bg-slate-50/20">
                   <h2 className="font-black text-slate-800 flex items-center gap-2 uppercase tracking-tighter text-base">
@@ -318,6 +338,7 @@ const App: React.FC = () => {
         </div>
       </main>
 
+      {/* 結帳視窗 */}
       {showCheckoutModal && (
         <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[100] flex items-center justify-center p-6">
           <div className="bg-white w-full max-w-md rounded-[3.5rem] shadow-2xl overflow-hidden animate-in zoom-in duration-300">
