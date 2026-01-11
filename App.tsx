@@ -54,6 +54,15 @@ const App: React.FC = () => {
     }).filter(item => item.quantity > 0));
   };
 
+  // 新功能：刪除單筆歷史紀錄
+  const deleteTransaction = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // 避免觸發折疊展開
+    if (window.confirm('確定要永久刪除這筆交易紀錄嗎？這會影響營業總額。')) {
+      setTransactions(prev => prev.filter(t => t.id !== id));
+      if (expandedTx === id) setExpandedTx(null);
+    }
+  };
+
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
   const monthLabels = useMemo(() => {
@@ -133,7 +142,7 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-slate-50 text-slate-900 overflow-hidden">
-      {/* 側邊欄 */}
+      {/* 側邊導航 */}
       <nav className="w-20 md:w-24 bg-slate-900 flex flex-col items-center py-10 gap-8 shadow-2xl z-20">
         <div className="bg-indigo-600 p-3 rounded-2xl text-white shadow-lg mb-4"><LayoutGrid size={28} /></div>
         <button onClick={() => setActiveTab('pos')} className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all cursor-pointer ${activeTab === 'pos' ? 'text-white bg-slate-800' : 'text-slate-500 hover:text-white'}`}>
@@ -210,8 +219,8 @@ const App: React.FC = () => {
                   <div className="p-20 text-center text-slate-300 font-black uppercase tracking-widest">目前尚無數據</div>
                 ) : (
                   stats.filteredList.map(t => (
-                    <div key={t.id} onClick={() => setExpandedTx(expandedTx === t.id ? null : t.id)} className="p-5 hover:bg-slate-50 transition-colors cursor-pointer group">
-                      <div className="flex justify-between items-center">
+                    <div key={t.id} onClick={() => setExpandedTx(expandedTx === t.id ? null : t.id)} className="p-5 hover:bg-slate-50 transition-colors cursor-pointer group relative">
+                      <div className="flex justify-between items-center pr-10">
                         <div className="flex items-center gap-4">
                           <div className={`p-3 rounded-xl ${t.paymentMethod === 'leke' ? 'bg-orange-100 text-orange-600' : t.paymentMethod === 'mobile' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
                             {t.paymentMethod === 'cash' ? <Banknote size={20}/> : t.paymentMethod === 'leke' ? <Users size={20}/> : <Smartphone size={20}/>}
@@ -223,6 +232,16 @@ const App: React.FC = () => {
                         </div>
                         <div className="text-slate-300 group-hover:text-slate-400">{expandedTx === t.id ? <ChevronUp size={20}/> : <ChevronDown size={20}/>}</div>
                       </div>
+
+                      {/* 刪除歷史紀錄按鈕 */}
+                      <button 
+                        onClick={(e) => deleteTransaction(t.id, e)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-200 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                        title="刪除紀錄"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+
                       {expandedTx === t.id && (
                         <div className="mt-4 pt-4 border-t border-slate-100 space-y-2 animate-in slide-in-from-top-2">
                           {t.items.map((item, idx) => (
@@ -309,7 +328,7 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {/* 結帳視窗 (縮小尺寸版) */}
+      {/* 結帳視窗 */}
       {showCheckoutModal && (
         <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[100] flex items-center justify-center p-6">
           <div className="bg-white w-full max-w-md rounded-[3.5rem] shadow-2xl overflow-hidden animate-in zoom-in duration-300">
@@ -331,18 +350,15 @@ const App: React.FC = () => {
                 <div className="p-6 space-y-6">
                   {!selectedPayment ? (
                     <div className="grid gap-4">
-                      {/* 現金 */}
                       <button onClick={() => setSelectedPayment('cash')} className="w-full flex items-center gap-4 p-5 rounded-[2.5rem] bg-indigo-600 text-white shadow-xl hover:bg-indigo-500 active:scale-95 transition-all cursor-pointer group">
                         <div className="p-3 bg-white/20 rounded-2xl group-hover:scale-110 transition-transform"><Banknote size={32}/></div>
                         <div className="text-left"><p className="font-black text-2xl tracking-tight leading-tight">現金支付</p><p className="text-[10px] text-white/70 font-bold uppercase tracking-widest">Cash Payment</p></div>
                       </button>
                       <div className="grid grid-cols-2 gap-4">
-                        {/* 行動支付 */}
                         <button onClick={() => setSelectedPayment('mobile')} className="flex flex-col items-center gap-2 p-5 rounded-[2rem] bg-slate-50 hover:bg-emerald-50 border border-transparent hover:border-emerald-200 transition-all cursor-pointer group">
                           <div className="p-3 bg-white text-emerald-600 rounded-2xl group-hover:scale-110 transition-transform shadow-sm"><Smartphone size={28}/></div>
                           <p className="font-black text-slate-800 text-lg">行動支付</p>
                         </button>
-                        {/* 樂客轉帳 - 橘色 */}
                         <button onClick={() => setSelectedPayment('leke')} className="flex flex-col items-center gap-2 p-5 rounded-[2rem] bg-orange-50 hover:bg-orange-100 border border-transparent hover:border-orange-200 transition-all cursor-pointer group">
                           <div className="p-3 bg-white text-orange-600 rounded-2xl group-hover:scale-110 transition-transform shadow-sm"><Users size={28}/></div>
                           <p className="font-black text-slate-800 text-lg">樂客轉帳</p>
